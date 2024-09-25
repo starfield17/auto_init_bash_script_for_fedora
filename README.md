@@ -1,0 +1,1 @@
+# auto_init_bash_script_for_fedora
