@@ -24,7 +24,7 @@ $UPDATE_CMD
 
 # 安装必要的软件包
 echo "Installing essential packages..."       
-$INSTALL_CMD curl wget bleachbit g++ gcc gdb fish neovim vim translate-shell putty remmina -y
+$INSTALL_CMD curl wget bleachbit g++ gcc gdb fish neovim vim translate-shell putty remmina fastfetch neofetch -y
 
 # 更改默认shell为fish
 echo "Changing default shell to fish..."
