@@ -1,10 +1,6 @@
 #!/bin/bash
 # 检查系统类型
-if [ -f /etc/debian_version ]; then
-PKG_MANAGER="apt-get"
-INSTALL_CMD="sudo apt-get install -y"
-UPDATE_CMD="sudo apt-get update -y && sudo apt-get upgrade -y"
-elif [ -f /etc/redhat-release ]; then
+if [ -f /etc/redhat-release ]; then
 PKG_MANAGER="dnf"
 INSTALL_CMD="sudo dnf install -y"
 UPDATE_CMD="sudo dnf update -y"
@@ -50,13 +46,9 @@ if [[ "$kicadin" =~ ^[Yy]$ ]]; then
 fi
 #安装Visual Studio Code
 echo "Installing Visual Studio Code..."
-if [ "$PKG_MANAGER" = "apt-get" ]; then
-wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-sudo install -o root -g root -m 644 microsoft.gpg /etc/apt/trusted.gpg.d/
-sudo sh -c 'echo "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" > /etc/apt/sources.list.d/vscode.list'
-sudo apt-get install apt-transport-https ibus-rime
-sudo apt-get update
-sudo apt-get install code -y
+if [ "$PKG_MANAGER" = "pacman" ]; then
+sudo pacman -S base-devel
+sudo pacman -S git
 elif [ "$PKG_MANAGER" = "dnf" ]; then
 sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
@@ -64,19 +56,6 @@ sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.m
 sudo dnf check-update
 sudo dnf install code -y
 sudo dnf upgrade --refresh
-#sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-#sudo dnf config-manager --add-repo https://packages.microsoft.com/yumrepos/edge
-#sudo dnf install microsoft-edge-stable
-fi
-read -p "Install Steam? (Y/y): " inssteam
-if [[ "$inssteam" =~ ^[Yy]$ ]]; then
-if [ "$PKG_MANAGER" = "apt-get" ]; then
-wget https://steamcdn-a.akamaihd.net/client/installer/steam.deb
-sudo apt install ./steam.deb
-elif [ "$PKG_MANAGER" = "dnf" ]; then
-sudo dnf install steam -y
-fi
-fi
 read -p "Install flatpak and some TOOLS? (Y/y): " clouds
 if [[ "$clouds" =~ ^[Yy]$ ]]; then
 sudo dnf install flatpak
@@ -85,6 +64,18 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
 flatpak install -y flathub io.github.peazip.PeaZip
 flatpak install -y flathub com.github.flxzt.rnote
 fi 
+#sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+#sudo dnf config-manager --add-repo https://packages.microsoft.com/yumrepos/edge
+#sudo dnf install microsoft-edge-stable
+fi
+read -p "Install Steam? (Y/y): " inssteam
+if [[ "$inssteam" =~ ^[Yy]$ ]]; then
+if [ "$PKG_MANAGER" = "pacman" ]; then
+echo "your environment is arch,skip."
+elif [ "$PKG_MANAGER" = "dnf" ]; then
+sudo dnf install steam -y
+fi
+fi
 # 配置本地化
 echo "Configuring locales..."
 if [ "$PKG_MANAGER" = "apt-get" ]; then
