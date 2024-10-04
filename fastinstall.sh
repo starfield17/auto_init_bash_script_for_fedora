@@ -25,7 +25,7 @@ echo "Updating and upgrading package lists..."
 $UPDATE_CMD
 # 安装必要的软件包
 echo "Installing essential packages..."       
-$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x -y
+$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger -y
 read -p "install packages need GUI?(Y/y/N)" GUIPACK
 if [[ "$GUIPACK" =~ ^[Yy]$ ]]; then
 $INSTALL_CMD  putty remmina bleachbit sysmontask -y
