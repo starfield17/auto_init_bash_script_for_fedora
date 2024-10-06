@@ -25,7 +25,10 @@ echo "Updating and upgrading package lists..."
 $UPDATE_CMD
 # 安装必要的软件包
 echo "Installing essential packages..."       
-$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger -y
+$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger cockpit cockpit-machines -y
+sudo systemctl enable --now cockpit.socket
+systemctl status cockpit.socket
+echo "cockpit started ,you can see you machine at your ip_address:9090"
 read -p "install packages need GUI?(Y/y/N)" GUIPACK
 if [[ "$GUIPACK" =~ ^[Yy]$ ]]; then
 $INSTALL_CMD  putty remmina bleachbit sysmontask -y
