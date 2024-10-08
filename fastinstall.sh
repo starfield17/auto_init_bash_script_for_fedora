@@ -1,6 +1,17 @@
 #!/bin/bash
 # 检查系统类型
 if [ -f /etc/redhat-release ]; then
+source /etc/os-release
+if [[ "$ID" == "rocky" ]]; then
+    echo "This is Rocky Linux."
+    sudo yum install -y dnf
+    sudo dnf install -y https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
+    sudo dnf install -y https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
+elif [[ "$ID" == "fedora" ]]; then
+    echo "This is Fedora."
+else
+    echo "This is neither Rocky Linux nor Fedora."
+fi
 PKG_MANAGER="dnf"
 INSTALL_CMD="sudo dnf install -y"
 UPDATE_CMD="sudo dnf update -y"
