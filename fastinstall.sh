@@ -3,10 +3,14 @@
 if [ -f /etc/redhat-release ]; then
 source /etc/os-release
 if [[ "$ID" == "rocky" ]]; then
-    echo "This is Rocky Linux."
-    sudo yum install -y dnf
-    sudo dnf install -y https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
-    sudo dnf install -y https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
+echo "This is Rocky Linux."
+sudo yum install -y dnf
+sudo dnf install -y yum-utils
+sudo dnf install -y https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
+sudo dnf install -y https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
+sudo dnf install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm
+dnf config-manager --set-enabled crb
+sudo dnf install epel-release epel-next-release
 elif [[ "$ID" == "fedora" ]]; then
     echo "This is Fedora."
 else
