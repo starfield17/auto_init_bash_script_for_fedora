@@ -1,2 +1,2 @@
 # auto_init_bash_script_for_fedora
-自用的fedora快速安装初始化脚本，rocky使用需要添加redhat的仓库
+自用的fedora和Rocky快速安装初始化脚本。
