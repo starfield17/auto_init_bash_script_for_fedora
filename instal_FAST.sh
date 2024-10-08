@@ -1,37 +1,52 @@
 #!/bin/bash
 # 检查系统类型
 source /etc/os-release
-if [ -f /etc/redhat-release ]; then
-	if [[ "$ID" == "rocky" ]]; then
-		echo "This is Rocky Linux."
-		sudo yum install -y dnf
-		sudo dnf install -y https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
-	elif [[ "$ID" == "fedora" ]]; then
-		echo "This is Fedora."
-		sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-	else
-		echo "This redhat-release is neither Rocky Linux nor Fedora."
-	fi
-	PKG_MANAGER="dnf"
-	INSTALL_CMD="sudo dnf install -y"
-	UPDATE_CMD="sudo dnf update -y"
-	# 检查是否已经存在 "fastestmirror=True"
+configure_dnf() {
 	if ! grep -q "^fastestmirror=True" /etc/dnf/dnf.conf; then
-		sudo echo "fastestmirror=True" >> /etc/dnf/dnf.conf
+		echo "fastestmirror=True" | sudo tee -a /etc/dnf/dnf.conf
 		echo "fastestmirror 已成功添加到 /etc/dnf/dnf.conf"
 	else
 		echo "fastestmirror 已经存在于 /etc/dnf/dnf.conf 中"
 	fi
+}
+install_rpmfusion() {
+	sudo dnf install -y "https://mirrors.rpmfusion.org/free/$1/rpmfusion-free-release-$(rpm -E %$2).noarch.rpm" \
+	"https://mirrors.rpmfusion.org/nonfree/$1/rpmfusion-nonfree-release-$(rpm -E %$2).noarch.rpm"
+}
+ 
+if [ -f /etc/redhat-release ]; then
+	case "$ID" in
+	rocky)
+	echo "This is Rocky Linux."
+	sudo yum install -y dnf
+	configure_dnf
+	install_rpmfusion "el" "rhel"
+;;
+fedora)
+echo "This is Fedora."
+configure_dnf
+install_rpmfusion "fedora" "fedora"
+;;
+*)
+echo "This redhat-release is neither Rocky Linux nor Fedora."
+exit 1
+;;
+esac
+PKG_MANAGER="dnf"
+INSTALL_CMD="sudo dnf install -y"
+UPDATE_CMD="sudo dnf update -y"
 elif [ -f /etc/arch-release ]; then
-	PKG_MANAGER="pacman"
-	INSTALL_CMD="sudo pacman -S --noconfirm"
-	UPDATE_CMD="sudo pacman -Syu --noconfirm"
+PKG_MANAGER="pacman"
+INSTALL_CMD="sudo pacman -S --noconfirm"
+UPDATE_CMD="sudo pacman -Syu --noconfirm"
 else
-	echo "未知的Linux发行版"
-	exit 1
+echo "未知的Linux发行版"
+exit 1
 fi
 echo "使用的包管理器是: $PKG_MANAGER"
 # 更新和升级软件包列表
+echo "Updating and upgrading package lists..."
+$UPDATE_CMD
 echo "Updating and upgrading package lists..."
 $UPDATE_CMD
 # 安装必要的软件包
@@ -79,8 +94,12 @@ fi
 #安装Visual Studio Code
 echo "Installing Visual Studio Code..."
 if [ "$PKG_MANAGER" = "pacman" ]; then
-	sudo pacman -S base-devel
-	sudo pacman -S git
+    sudo pacman -S --noconfirm base-devel git
+    git clone https://aur.archlinux.org/visual-studio-code-bin.git
+    cd visual-studio-code-bin
+    makepkg -si --noconfirm
+    cd ..
+    rm -rf visual-studio-code-bin
 elif [ "$PKG_MANAGER" = "dnf" ]; then
 	sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
 	sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
@@ -89,15 +108,10 @@ elif [ "$PKG_MANAGER" = "dnf" ]; then
 	sudo dnf upgrade --refresh
 	read -p "Install flatpak and some TOOLS? (Y/y): " clouds
 	if [[ "$clouds" =~ ^[Yy]$ ]]; then
-		sudo dnf install flatpak
-		flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-		#flatpak install -y flathub com.netease.CloudMusic
-		flatpak install -y flathub io.github.peazip.PeaZip
-		flatpak install -y flathub com.github.flxzt.rnote
+	    sudo dnf install -y flatpak
+	    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+	    flatpak install -y flathub io.github.peazip.PeaZip com.github.flxzt.rnote
 	fi
-	#sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
-	#sudo dnf config-manager --add-repo https://packages.microsoft.com/yumrepos/edge
-	#sudo dnf install microsoft-edge-stable
 fi
 read -p "Install Steam? (Y/y): " inssteam
 if [[ "$inssteam" =~ ^[Yy]$ ]]; then
@@ -109,10 +123,13 @@ if [[ "$inssteam" =~ ^[Yy]$ ]]; then
 fi
 # 配置本地化
 echo "Configuring locales..."
-if [ "$PKG_MANAGER" = "apt-get" ]; then
-	sudo dpkg-reconfigure locales
+if [ "$PKG_MANAGER" = "dnf" ]; then
+    sudo localectl set-locale LANG=en_US.UTF-8
+elif [ "$PKG_MANAGER" = "pacman" ]; then
+    sudo localectl set-locale LANG=en_US.UTF-8
 else
-	sudo localectl set-locale LANG=en_US.UTF-8
+    echo "Unsupported package manager: $PKG_MANAGER"
+    exit 1
 fi
 cat cockpit.socket
 rm cockpit.socket
