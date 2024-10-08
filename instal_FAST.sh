@@ -44,7 +44,7 @@ else
 	$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger cockpit cockpit-machines -y
 fi
 sudo systemctl enable --now cockpit.socket
-systemctl status cockpit.socket
+systemctl status cockpit.socket > cockpit.socket
 echo "cockpit started ,you can see you machine at your ip_address:9090"
 read -p "install packages need GUI?(Y/y/N)" GUIPACK
 if [[ "$GUIPACK" =~ ^[Yy]$ ]]; then
@@ -114,4 +114,6 @@ if [ "$PKG_MANAGER" = "apt-get" ]; then
 else
 	sudo localectl set-locale LANG=en_US.UTF-8
 fi
-echo "Installation and setup complete!
+cat cockpit.socket
+rm cockpit.socket
+echo "Installation and setup complete!"
