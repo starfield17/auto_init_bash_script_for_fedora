@@ -1,3 +1,5 @@
+#!/bin/bash
+# 检查系统类型
 source /etc/os-release
 if [ -f /etc/redhat-release ]; then
 	if [[ "$ID" == "rocky" ]]; then
@@ -13,8 +15,9 @@ if [ -f /etc/redhat-release ]; then
 	PKG_MANAGER="dnf"
 	INSTALL_CMD="sudo dnf install -y"
 	UPDATE_CMD="sudo dnf update -y"
+	# 检查是否已经存在 "fastestmirror=True"
 	if ! grep -q "^fastestmirror=True" /etc/dnf/dnf.conf; then
-		sudo echo "fastestmirror=True" >>/etc/dnf/dnf.conf
+		sudo echo "fastestmirror=True" >> /etc/dnf/dnf.conf
 		echo "fastestmirror 已成功添加到 /etc/dnf/dnf.conf"
 	else
 		echo "fastestmirror 已经存在于 /etc/dnf/dnf.conf 中"
@@ -28,15 +31,17 @@ else
 	exit 1
 fi
 echo "使用的包管理器是: $PKG_MANAGER"
+# 更新和升级软件包列表
 echo "Updating and upgrading package lists..."
 $UPDATE_CMD
+# 安装必要的软件包
 echo "Installing essential packages..."
 if [[ "$ID" == "rocky" ]]; then
-	$INSTALL_CMD curl wget g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop ranger cockpit cockpit-machines -y
+	$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop  ranger cockpit cockpit-machines -y
 elif [[ "$ID" == "fedora" ]]; then
-	$INSTALL_CMD curl wget g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger cockpit cockpit-machines -y
+	$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger cockpit cockpit-machines -y
 else
-	$INSTALL_CMD curl wget g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger cockpit cockpit-machines -y
+	$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger cockpit cockpit-machines -y
 fi
 sudo systemctl enable --now cockpit.socket
 systemctl status cockpit.socket
@@ -44,14 +49,15 @@ echo "cockpit started ,you can see you machine at your ip_address:9090"
 read -p "install packages need GUI?(Y/y/N)" GUIPACK
 if [[ "$GUIPACK" =~ ^[Yy]$ ]]; then
 	if [[ "$ID" == "rocky" ]]; then
-		$INSTALL_CMD putty remmina bleachbit -y
+		$INSTALL_CMD  putty remmina bleachbit -y
 	elif [[ "$ID" == "fedora" ]]; then
-		$INSTALL_CMD putty remmina bleachbit sysmontask -y
+		$INSTALL_CMD  putty remmina bleachbit sysmontask -y
 	else
-		$INSTALL_CMD putty remmina bleachbit -y
+		$INSTALL_CMD  putty remmina bleachbit -y
 	fi
 	echo "GUI_PACKAGES install complete."
 fi
+# 更改默认shell为fish
 echo "Changing default shell to fish..."
 sudo chsh -s /usr/bin/fish
 chsh -s /usr/bin/fish
@@ -70,6 +76,7 @@ if [[ "$kicadin" =~ ^[Yy]$ ]]; then
 	rm lceda-pro-linux-x64-2.2.27.1.zip
 	echo "EDA software installation completed"
 fi
+#安装Visual Studio Code
 echo "Installing Visual Studio Code..."
 if [ "$PKG_MANAGER" = "pacman" ]; then
 	sudo pacman -S base-devel
@@ -84,9 +91,13 @@ elif [ "$PKG_MANAGER" = "dnf" ]; then
 	if [[ "$clouds" =~ ^[Yy]$ ]]; then
 		sudo dnf install flatpak
 		flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+		#flatpak install -y flathub com.netease.CloudMusic
 		flatpak install -y flathub io.github.peazip.PeaZip
 		flatpak install -y flathub com.github.flxzt.rnote
 	fi
+	#sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
+	#sudo dnf config-manager --add-repo https://packages.microsoft.com/yumrepos/edge
+	#sudo dnf install microsoft-edge-stable
 fi
 read -p "Install Steam? (Y/y): " inssteam
 if [[ "$inssteam" =~ ^[Yy]$ ]]; then
@@ -96,10 +107,11 @@ if [[ "$inssteam" =~ ^[Yy]$ ]]; then
 		sudo dnf install steam -y
 	fi
 fi
+# 配置本地化
 echo "Configuring locales..."
 if [ "$PKG_MANAGER" = "apt-get" ]; then
 	sudo dpkg-reconfigure locales
 else
 	sudo localectl set-locale LANG=en_US.UTF-8
 fi
-echo "Installation and setup complete!"
+echo "Installation and setup complete!
