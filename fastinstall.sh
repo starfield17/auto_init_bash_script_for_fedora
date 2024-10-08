@@ -1,20 +1,16 @@
 #!/bin/bash
 # 检查系统类型
-if [ -f /etc/redhat-release ]; then
 source /etc/os-release
+if [ -f /etc/redhat-release ]; then
 if [[ "$ID" == "rocky" ]]; then
 echo "This is Rocky Linux."
 sudo yum install -y dnf
-sudo dnf install -y yum-utils
-sudo dnf install -y https://download1.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm
-sudo dnf install -y https://download1.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
-sudo dnf install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm
-dnf config-manager --set-enabled crb
-sudo dnf install epel-release epel-next-release
+sudo dnf install -y https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
 elif [[ "$ID" == "fedora" ]]; then
     echo "This is Fedora."
+    sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 else
-    echo "This is neither Rocky Linux nor Fedora."
+    echo "This redhat-release is neither Rocky Linux nor Fedora."
 fi
 PKG_MANAGER="dnf"
 INSTALL_CMD="sudo dnf install -y"
@@ -40,13 +36,25 @@ echo "Updating and upgrading package lists..."
 $UPDATE_CMD
 # 安装必要的软件包
 echo "Installing essential packages..."       
+if [[ "$ID" == "rocky" ]]; then
+$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop  ranger cockpit cockpit-machines -y
+elif [[ "$ID" == "fedora" ]]; then
 $INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger cockpit cockpit-machines -y
+else
+$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger cockpit cockpit-machines -y
+fi
 sudo systemctl enable --now cockpit.socket
 systemctl status cockpit.socket
 echo "cockpit started ,you can see you machine at your ip_address:9090"
 read -p "install packages need GUI?(Y/y/N)" GUIPACK
 if [[ "$GUIPACK" =~ ^[Yy]$ ]]; then
+if [[ "$ID" == "rocky" ]]; then
+$INSTALL_CMD  putty remmina bleachbit -y
+elif [[ "$ID" == "fedora" ]]; then
 $INSTALL_CMD  putty remmina bleachbit sysmontask -y
+else
+$INSTALL_CMD  putty remmina bleachbit -y
+fi
 echo "GUI_PACKAGES install complete."
 fi
 # 更改默认shell为fish
@@ -55,7 +63,13 @@ sudo chsh -s /usr/bin/fish
 chsh -s /usr/bin/fish
 read -p "Install KiCad, QUCS, and JLCEDA? (Y/y): " kicadin
 if [[ "$kicadin" =~ ^[Yy]$ ]]; then
-    $INSTALL_CMD kicad qucs -y
+if [[ "$ID" == "rocky" ]]; then
+echo "only JLCEDA can be install"
+elif [[ "$ID" == "fedora" ]]; then
+$INSTALL_CMD kicad qucs -y
+else
+$INSTALL_CMD kicad qucs -y
+fi
     wget https://image.lceda.cn/files/lceda-pro-linux-x64-2.2.27.1.zip
     unzip lceda-pro-linux-x64-2.2.27.1.zip
     sudo bash ./install.sh
@@ -68,7 +82,6 @@ if [ "$PKG_MANAGER" = "pacman" ]; then
 sudo pacman -S base-devel
 sudo pacman -S git
 elif [ "$PKG_MANAGER" = "dnf" ]; then
-sudo dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
 sudo rpm --import https://packages.microsoft.com/keys/microsoft.asc
 sudo sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'  
 sudo dnf check-update
