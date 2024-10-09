@@ -9,11 +9,11 @@ configure_dnf() {
 	else
 		echo "fastestmirror 已经存在于 /etc/dnf/dnf.conf 中"
 	fi
- 	if ! grep -q "^max_parallel_downloads=6" /etc/dnf/dnf.conf; then
-		echo "max_parallel_downloads=6" | sudo tee -a /etc/dnf/dnf.conf
-		echo "max_parallel_downloads=6 已成功添加到 /etc/dnf/dnf.conf"
+ 	if ! grep -q "^max_parallel_downloads=4" /etc/dnf/dnf.conf; then
+		echo "max_parallel_downloads=4" | sudo tee -a /etc/dnf/dnf.conf
+		echo "max_parallel_downloads=4 已成功添加到 /etc/dnf/dnf.conf"
 	else
-		echo "max_parallel_downloads=6 已经存在于 /etc/dnf/dnf.conf 中"
+		echo "max_parallel_downloads=4 已经存在于 /etc/dnf/dnf.conf 中"
 	fi
 }
 
