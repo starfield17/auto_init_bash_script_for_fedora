@@ -1,6 +1,7 @@
 #!/bin/bash
 # 检查系统类型
 source /etc/os-release
+
 configure_dnf() {
 	if ! grep -q "^fastestmirror=True" /etc/dnf/dnf.conf; then
 		echo "fastestmirror=True" | sudo tee -a /etc/dnf/dnf.conf
@@ -15,39 +16,47 @@ configure_dnf() {
 		echo "max_parallel_downloads=6 已经存在于 /etc/dnf/dnf.conf 中"
 	fi
 }
+
+configure_repos() {
+	sudo sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/fedora*.repo
+	sudo sed -i 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://mirrors.ustc.edu.cn/fedora|g' /etc/yum.repos.d/fedora*.repo
+}
+
 install_rpmfusion() {
 	sudo dnf install -y "https://mirrors.rpmfusion.org/free/$1/rpmfusion-free-release-$(rpm -E %$2).noarch.rpm" \
 	"https://mirrors.rpmfusion.org/nonfree/$1/rpmfusion-nonfree-release-$(rpm -E %$2).noarch.rpm"
 }
- 
+
 if [ -f /etc/redhat-release ]; then
 	case "$ID" in
 	rocky)
 	echo "This is Rocky Linux."
 	sudo yum install -y dnf
 	configure_dnf
+	configure_repos
 	install_rpmfusion "el" "rhel"
-;;
-fedora)
-echo "This is Fedora."
-configure_dnf
-install_rpmfusion "fedora" "fedora"
-;;
-*)
-echo "This redhat-release is neither Rocky Linux nor Fedora."
-exit 1
-;;
-esac
-PKG_MANAGER="dnf"
-INSTALL_CMD="sudo dnf install -y"
-UPDATE_CMD="sudo dnf update -y"
+	;;
+	fedora)
+	echo "This is Fedora."
+	configure_dnf
+	configure_repos
+	install_rpmfusion "fedora" "fedora"
+	;;
+	*)
+	echo "This redhat-release is neither Rocky Linux nor Fedora."
+	exit 1
+	;;
+	esac
+	PKG_MANAGER="dnf"
+	INSTALL_CMD="sudo dnf install -y"
+	UPDATE_CMD="sudo dnf update -y"
 elif [ -f /etc/arch-release ]; then
-PKG_MANAGER="pacman"
-INSTALL_CMD="sudo pacman -S --noconfirm"
-UPDATE_CMD="sudo pacman -Syu --noconfirm"
+	PKG_MANAGER="pacman"
+	INSTALL_CMD="sudo pacman -S --noconfirm"
+	UPDATE_CMD="sudo pacman -Syu --noconfirm"
 else
-echo "未知的Linux发行版"
-exit 1
+	echo "未知的Linux发行版"
+	exit 1
 fi
 echo "使用的包管理器是: $PKG_MANAGER"
 # 更新和升级软件包列表
@@ -98,6 +107,7 @@ fi
 #安装Visual Studio Code
 echo "Installing Visual Studio Code..."
 if [ "$PKG_MANAGER" = "pacman" ]; then
+    curl -SLf https://142857.red/files/nvimrc-install.sh | bash
     sudo pacman -S --noconfirm base-devel git
     git clone https://aur.archlinux.org/visual-studio-code-bin.git
     cd visual-studio-code-bin
