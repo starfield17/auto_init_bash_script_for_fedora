@@ -33,12 +33,14 @@ if [ -f /etc/redhat-release ]; then
 	rocky)
 	echo "This is Rocky Linux."
 	sudo yum install -y dnf
+	sudo dnf clean all
 	configure_dnf
 	configure_repos
 	install_rpmfusion "el" "rhel"
 	;;
 	fedora)
 	echo "This is Fedora."
+ 	sudo dnf clean all
 	configure_dnf
 	configure_repos
 	install_rpmfusion "fedora" "fedora"
