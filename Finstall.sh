@@ -8,6 +8,12 @@ configure_dnf() {
 	else
 		echo "fastestmirror 已经存在于 /etc/dnf/dnf.conf 中"
 	fi
+ 	if ! grep -q "^max_parallel_downloads=6" /etc/dnf/dnf.conf; then
+		echo "max_parallel_downloads=6" | sudo tee -a /etc/dnf/dnf.conf
+		echo "max_parallel_downloads=6 已成功添加到 /etc/dnf/dnf.conf"
+	else
+		echo "max_parallel_downloads=6 已经存在于 /etc/dnf/dnf.conf 中"
+	fi
 }
 install_rpmfusion() {
 	sudo dnf install -y "https://mirrors.rpmfusion.org/free/$1/rpmfusion-free-release-$(rpm -E %$2).noarch.rpm" \
