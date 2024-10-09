@@ -47,8 +47,6 @@ echo "使用的包管理器是: $PKG_MANAGER"
 # 更新和升级软件包列表
 echo "Updating and upgrading package lists..."
 $UPDATE_CMD
-echo "Updating and upgrading package lists..."
-$UPDATE_CMD
 # 安装必要的软件包
 echo "Installing essential packages..."
 if [[ "$ID" == "rocky" ]]; then
