@@ -16,18 +16,20 @@ configure_dnf() {
 		echo "max_parallel_downloads=4 已经存在于 /etc/dnf/dnf.conf 中"
 	fi
 }
-
 configure_repos() {
-	sudo sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/fedora*.repo
-	sudo sed -i 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://mirrors.ustc.edu.cn/fedora|g' /etc/yum.repos.d/fedora*.repo
-	sudo sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
+	if [ "$ID" == "fedora" ]; then
+		sudo sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/fedora*.repo
+		sudo sed -i 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://mirrors.ustc.edu.cn/fedora|g' /etc/yum.repos.d/fedora*.repo
+		sudo sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
+	elif [ "$ID" == "rocky" ]; then
+		sudo sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo
+		sudo sed -i 's|^#baseurl=http://mirror.centos.org|baseurl=https://mirrors.ustc.edu.cn|g' /etc/yum.repos.d/CentOS-*.repo
+	fi
 }
-
 install_rpmfusion() {
 	sudo dnf install -y "https://mirrors.rpmfusion.org/free/$1/rpmfusion-free-release-$(rpm -E %$2).noarch.rpm" \
 	"https://mirrors.rpmfusion.org/nonfree/$1/rpmfusion-nonfree-release-$(rpm -E %$2).noarch.rpm"
 }
-
 if [ -f /etc/redhat-release ]; then
 	case "$ID" in
 	rocky)
@@ -77,6 +79,8 @@ fi
 sudo systemctl enable --now cockpit.socket
 systemctl status cockpit.socket > cockpit.socket
 echo "cockpit started ,you can see you machine at your ip_address:9090"
+echo "installing cpolar..."
+curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash
 read -p "install packages need GUI?(Y/y/N)" GUIPACK
 if [[ "$GUIPACK" =~ ^[Yy]$ ]]; then
 	if [[ "$ID" == "rocky" ]]; then
@@ -88,6 +92,7 @@ if [[ "$GUIPACK" =~ ^[Yy]$ ]]; then
 	fi
 	echo "GUI_PACKAGES install complete."
 fi
+
 # 更改默认shell为fish
 echo "Changing default shell to fish..."
 sudo chsh -s /usr/bin/fish
