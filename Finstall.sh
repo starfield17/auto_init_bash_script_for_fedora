@@ -1,7 +1,7 @@
 #!/bin/bash
 # 检查系统类型
 source /etc/os-release
-
+ID=$(echo $ID)
 configure_dnf() {
 	if ! grep -q "^fastestmirror=True" /etc/dnf/dnf.conf; then
 		echo "fastestmirror=True" | sudo tee -a /etc/dnf/dnf.conf
@@ -27,6 +27,7 @@ configure_repos() {
 	fi
 }
 install_rpmfusion() {
+	echo "Installing RPMFusion for $1 with macro $2"
 	sudo dnf install -y "https://mirrors.rpmfusion.org/free/$1/rpmfusion-free-release-$(rpm -E %$2).noarch.rpm" \
 	"https://mirrors.rpmfusion.org/nonfree/$1/rpmfusion-nonfree-release-$(rpm -E %$2).noarch.rpm"
 }
