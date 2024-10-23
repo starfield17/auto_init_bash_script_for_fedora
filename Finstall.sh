@@ -21,7 +21,7 @@ configure_repos() {
   		sudo sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/fedora*.repo
 		sudo sed -i 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://mirrors.ustc.edu.cn/fedora|g' /etc/yum.repos.d/fedora*.repo
 		sudo sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
-	elif [ "$ID" == "rocky" ]; then
+	elif [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
 		sudo sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo
 		sudo sed -i 's|^#baseurl=http://mirror.centos.org|baseurl=https://mirrors.ustc.edu.cn|g' /etc/yum.repos.d/CentOS-*.repo
 	fi
@@ -48,8 +48,16 @@ if [ -f /etc/redhat-release ]; then
 	configure_repos
 	install_rpmfusion "fedora" "fedora"
 	;;
+	almalinux)
+	echo "This is AlmaLinux."
+	sudo yum install -y dnf
+	sudo dnf clean all
+	configure_dnf
+	configure_repos
+	install_rpmfusion "el" "rhel"
+	;;
 	*)
-	echo "This redhat-release is neither Rocky Linux nor Fedora."
+	echo "This redhat-release is neither Rocky Linux, Fedora, nor AlmaLinux."
 	exit 1
 	;;
 	esac
@@ -70,7 +78,7 @@ echo "Updating and upgrading package lists..."
 $UPDATE_CMD
 # 安装必要的软件包
 echo "Installing essential packages..."
-if [[ "$ID" == "rocky" ]]; then
+if [[ "$ID" == "rocky" ]] || [[ "$ID" == "almalinux" ]]; then
 	$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop  ranger cockpit cockpit-machines -y
 elif [[ "$ID" == "fedora" ]]; then
 	$INSTALL_CMD curl wget  g++ gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux htop cpu-x ranger cockpit cockpit-machines -y
@@ -82,18 +90,17 @@ systemctl status cockpit.socket > cockpit.socket
 echo "cockpit started ,you can see you machine at your ip_address:9090"
 echo "installing cpolar..."
 curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash
-read -p "install packages need GUI?(Y/y/N)" GUIPACK
+read -p "install packages need GUI? (Y/y/N) " GUIPACK
 if [[ "$GUIPACK" =~ ^[Yy]$ ]]; then
-	if [[ "$ID" == "rocky" ]]; then
-		$INSTALL_CMD  putty remmina bleachbit -y
+	if [[ "$ID" == "rocky" ]] || [[ "$ID" == "almalinux" ]]; then
+		$INSTALL_CMD putty remmina bleachbit -y
 	elif [[ "$ID" == "fedora" ]]; then
-		$INSTALL_CMD  putty remmina bleachbit sysmontask -y
+		$INSTALL_CMD putty remmina bleachbit sysmontask -y
 	else
 		$INSTALL_CMD  putty remmina bleachbit -y
 	fi
 	echo "GUI_PACKAGES install complete."
 fi
-
 # 更改默认shell为fish
 echo "Changing default shell to fish..."
 sudo chsh -s /usr/bin/fish
