@@ -16,15 +16,35 @@ configure_dnf() {
 		echo "max_parallel_downloads=4 已经存在于 /etc/dnf/dnf.conf 中"
 	fi
 }
+update_repo() {
+    local distro="$1"
+    local old_baseurl="$2"
+    local new_baseurl="$3"
+    
+    sudo sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/"$distro"*.repo
+    sudo sed -i "s|^#baseurl=$old_baseurl|baseurl=$new_baseurl|g" /etc/yum.repos.d/"$distro"*.repo
+}
 configure_repos() {
-	if [ "$ID" == "fedora" ]; then
-  		sudo sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/fedora*.repo
-		sudo sed -i 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://mirrors.ustc.edu.cn/fedora|g' /etc/yum.repos.d/fedora*.repo
-		sudo sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
-	elif [ "$ID" == "rocky" ] || [ "$ID" == "almalinux" ]; then
-		sudo sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/CentOS-*.repo
-		sudo sed -i 's|^#baseurl=http://mirror.centos.org|baseurl=https://mirrors.ustc.edu.cn|g' /etc/yum.repos.d/CentOS-*.repo
-	fi
+    case "$ID" in
+        fedora)
+            sudo sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/fedora*.repo
+            sudo sed -i 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://mirrors.ustc.edu.cn/fedora|g' /etc/yum.repos.d/fedora*.repo
+            sudo sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
+            ;;
+        
+        almalinux)
+            update_repo "almalinux" "https://repo.almalinux.org" "https://mirrors.ustc.edu.cn/almalinux"
+            ;;
+
+        rocky)
+            update_repo "rocky" "https://download.rockylinux.org" "https://mirrors.ustc.edu.cn/rocky"
+            ;;
+
+        *)
+            echo "Unsupported distribution: $ID"
+            return 1
+            ;;
+    esac
 }
 install_rpmfusion() {
 	echo "Installing RPMFusion for $1 with macro $2"
@@ -32,46 +52,44 @@ install_rpmfusion() {
 	"https://mirrors.rpmfusion.org/nonfree/$1/rpmfusion-nonfree-release-$(rpm -E %$2).noarch.rpm"
 }
 if [ -f /etc/redhat-release ]; then
-	case "$ID" in
-	rocky)
-	echo "This is Rocky Linux."
-	sudo yum install -y dnf
-	sudo dnf clean all
-	configure_dnf
-	configure_repos
-	install_rpmfusion "el" "rhel"
-	;;
-	fedora)
-	echo "This is Fedora."
- 	sudo dnf clean all
-	configure_dnf
-	configure_repos
-	install_rpmfusion "fedora" "fedora"
-	;;
-	almalinux)
-	echo "This is AlmaLinux."
-	sudo yum install -y dnf
-	sudo dnf clean all
-	configure_dnf
-	configure_repos
-	install_rpmfusion "el" "rhel"
-	;;
-	*)
-	echo "This redhat-release is neither Rocky Linux, Fedora, nor AlmaLinux."
-	exit 1
-	;;
-	esac
-	PKG_MANAGER="dnf"
-	INSTALL_CMD="sudo dnf install -y"
-	UPDATE_CMD="sudo dnf update -y"
+    case "$ID" in
+        rocky|almalinux)
+            echo "This is $ID."
+            sudo yum install -y dnf
+            PKG_MANAGER="dnf"
+            ;;
+        fedora)
+            echo "This is Fedora."
+            PKG_MANAGER="dnf"
+            ;;
+        *)
+            echo "This redhat-release is neither Rocky Linux, Fedora, nor AlmaLinux."
+            exit 1
+            ;;
+    esac
+    # 通用的 DNF 配置和命令赋值
+    INSTALL_CMD="sudo dnf install -y"
+    UPDATE_CMD="sudo dnf update -y"
+    sudo dnf clean all
+    configure_dnf
+    configure_repos
+
+    if [[ "$ID" == "rocky" || "$ID" == "almalinux" ]]; then
+        install_rpmfusion "el" "rhel"
+    elif [ "$ID" == "fedora" ]; then
+        install_rpmfusion "fedora" "fedora"
+    fi
+
 elif [ -f /etc/arch-release ]; then
-	PKG_MANAGER="pacman"
-	INSTALL_CMD="sudo pacman -S --noconfirm"
-	UPDATE_CMD="sudo pacman -Syu --noconfirm"
+    echo "This is Arch Linux."
+    PKG_MANAGER="pacman"
+    INSTALL_CMD="sudo pacman -S --noconfirm"
+    UPDATE_CMD="sudo pacman -Syu --noconfirm"
 else
-	echo "未知的Linux发行版"
-	exit 1
+    echo "未知的Linux发行版"
+    exit 1
 fi
+
 echo "使用的包管理器是: $PKG_MANAGER"
 # 更新和升级软件包列表
 echo "Updating and upgrading package lists..."
