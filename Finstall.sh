@@ -20,7 +20,7 @@ configure_repos() {
   if [ "$ID" == "fedora" ]; then
     	sudo sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/fedora*.repo
     	sudo sed -i 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://mirrors.ustc.edu.cn/fedora|g' /etc/yum.repos.d/fedora*.repo
-    	#sudo sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
+    	sudo sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
   elif [ "$ID" == "almalinux" ]; then
   	sudo sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/almalinux*.repo
     	sudo sed -i 's|^#baseurl=https://repo.almalinux.org|baseurl=https://mirrors.nju.edu.cn/download/AlmaLinux|g' /etc/yum.repos.d/almalinux*.repo
