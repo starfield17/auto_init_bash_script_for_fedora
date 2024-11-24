@@ -82,11 +82,11 @@ $UPDATE_CMD
 # 安装必要的软件包
 echo "Installing essential packages..."
 if [[ "$ID" == "rocky" ]] || [[ "$ID" == "almalinux" ]]; then
-	$INSTALL_CMD curl wget gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux byobu htop btop ranger cockpit cockpit-machines -y
+	$INSTALL_CMD gcc gdb fish neovim vim fastfetch neofetch tmux byobu helix htop btop ranger cockpit cockpit-machines -y
 elif [[ "$ID" == "fedora" ]]; then
-	$INSTALL_CMD curl wget gcc gdb fish neovim vim translate-shell fastfetch tmux byobu htop cpu-x btop ranger cockpit cockpit-machines -y
+	$INSTALL_CMD  gcc gdb fish neovim vim translate-shell fastfetch helix tmux byobu htop btop ranger -y
 else
-	$INSTALL_CMD curl wget gcc gdb fish neovim vim translate-shell fastfetch neofetch tmux byobu htop cpu-x ranger btop cockpit cockpit-machines -y
+	$INSTALL_CMD  fish neovim vim zsh fastfetch neofetch tmux byobu htop ranger btop -y
 fi
 sudo systemctl enable --now cockpit.socket
 systemctl status cockpit.socket > cockpit.socket
