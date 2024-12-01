@@ -85,6 +85,7 @@ if [[ "$ID" == "rocky" ]] || [[ "$ID" == "almalinux" ]]; then
 	$INSTALL_CMD gcc gdb fish neovim vim fastfetch neofetch tmux byobu helix htop btop ranger cockpit cockpit-machines -y
 elif [[ "$ID" == "fedora" ]]; then
 	$INSTALL_CMD  gcc gdb fish neovim vim translate-shell fastfetch helix tmux byobu htop btop ranger -y
+ 	curl -sLf https://spacevim.org/install.sh | bash
 else
 	$INSTALL_CMD  fish neovim vim zsh fastfetch neofetch tmux byobu htop ranger btop -y
 fi
