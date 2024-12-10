@@ -47,8 +47,21 @@ configure_repos() {
             sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
             ;;
         "almalinux")
-            sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/almalinux*.repo
-            sed -i 's|^#baseurl=https://repo.almalinux.org|baseurl=https://mirrors.nju.edu.cn/AlmaLinux|g' /etc/yum.repos.d/almalinux*.repo
+            # 修改 AlmaLinux 基础源为阿里云镜像
+            sed -e 's|^mirrorlist=|#mirrorlist=|g' \
+                -e 's|^# baseurl=https://repo.almalinux.org|baseurl=https://mirrors.aliyun.com|g' \
+                -i.bak \
+                /etc/yum.repos.d/almalinux*.repo
+            
+            # 如果安装了 epel，同时修改 epel 源
+            if [ -f /etc/yum.repos.d/epel.repo ]; then
+                sed -e 's|^metalink=|#metalink=|g' \
+                    -e 's|^#baseurl=https://download.example/pub|baseurl=https://mirrors.aliyun.com|g' \
+                    -e 's|^#baseurl=https://download.fedoraproject.org/pub|baseurl=https://mirrors.aliyun.com|g' \
+                    -i.bak \
+                    /etc/yum.repos.d/epel*.repo
+            fi
+            echo "已更新 AlmaLinux 软件源为阿里云镜像"
             ;;
         "rocky")
             sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/rocky*.repo
