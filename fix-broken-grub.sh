@@ -5,10 +5,37 @@ if [ "$EUID" -ne 0 ]; then
   echo "请以root权限运行此脚本。使用 sudo ./manage_grub.sh"
   exit 1
 fi
+
 # 确定GRUB配置文件路径
 if [ -d /sys/firmware/efi ]; then
-  GRUB_CFG="/boot/efi/EFI/rocky/grub.cfg"
-  echo "检测到 UEFI 系统。使用 $GRUB_CFG 作为 GRUB 配置文件。"
+  echo "检测到 UEFI 系统。"
+
+  # 获取 /boot/efi/EFI/ 目录下的所有子目录，排除 BOOT
+  EFI_DIR="/boot/efi/EFI"
+  GRUB_CFG=""
+  GRUB_DIR=""
+
+  echo "正在查找 GRUB 配置文件..."
+
+  for dir in "$EFI_DIR"/*/; do
+    # 排除 BOOT 目录
+    if [[ "$dir" == *"BOOT"* ]]; then
+      continue
+    fi
+
+    # 检查 grub.cfg 是否存在于子目录
+    if [ -f "${dir}grub.cfg" ]; then
+      GRUB_CFG="${dir}grub.cfg"
+      GRUB_DIR=$(basename "$dir")
+      echo "找到 GRUB 配置文件：$GRUB_CFG （目录：$GRUB_DIR）"
+      break
+    fi
+  done
+
+  if [ -z "$GRUB_CFG" ]; then
+    echo "未找到 GRUB 配置文件。请确认 /boot/efi/EFI/ 下存在有效的 GRUB 配置文件。"
+    exit 1
+  fi
 else
   GRUB_CFG="/boot/grub2/grub.cfg"
   echo "检测到 BIOS 系统。使用 $GRUB_CFG 作为 GRUB 配置文件。"
@@ -89,8 +116,8 @@ if [[ "$selected_entry" == *"系统备份"* || "$selected_entry" == *"snapshot"*
     echo "系统快照工具（如 Timeshift）未安装。请手动删除相关快照。"
     exit 1
   fi
-elif [[ "$selected_entry" == Rocky* ]]; then
-  echo "检测到该启动项可能对应一个内核版本。尝试删除相关内核。"
+elif [[ "$selected_entry" == Rocky* || "$selected_entry" == Fedora* ]]; then
+  echo "检测到该启动项可能对应一个内核版本或系统实例。尝试删除相关内核或系统快照。"
 
   # 列出所有已安装的内核
   echo "已安装的内核版本："
@@ -128,7 +155,18 @@ fi
 
 # 更新 GRUB 配置
 echo "正在更新 GRUB 配置..."
-grub2-mkconfig -o /boot/grub2/grub.cfg
+if [ -d /sys/firmware/efi ]; then
+  # UEFI 系统
+  if [ -d "/boot/efi/EFI/$GRUB_DIR" ]; then
+    grub2-mkconfig -o "/boot/efi/EFI/$GRUB_DIR/grub.cfg"
+  else
+    echo "无法找到 GRUB 目录：/boot/efi/EFI/$GRUB_DIR"
+    exit 1
+  fi
+else
+  # BIOS 系统
+  grub2-mkconfig -o /boot/grub2/grub.cfg
+fi
 
 if [ $? -eq 0 ]; then
   echo "GRUB 配置已成功更新。"
