@@ -25,15 +25,46 @@ if [ -d /sys/firmware/efi ]; then
 
     # 检查 grub.cfg 是否存在于子目录
     if [ -f "${dir}grub.cfg" ]; then
-      GRUB_CFG="${dir}grub.cfg"
-      GRUB_DIR=$(basename "$dir")
-      echo "找到 GRUB 配置文件：$GRUB_CFG （目录：$GRUB_DIR）"
-      break
+      # 解析 grub.cfg 以找到实际的配置文件
+      # 读取 grub.cfg 中的 configfile 行
+      configfile_line=$(grep "^configfile " "${dir}grub.cfg" | head -n 1)
+      if [[ "$configfile_line" =~ configfile\ ([^[:space:]]+) ]]; then
+        actual_grub_cfg="${BASH_REMATCH[1]}"
+        # 处理相对路径
+        if [[ "$actual_grub_cfg" != /* ]]; then
+          actual_grub_cfg="${dir}${actual_grub_cfg}"
+        fi
+        if [ -f "$actual_grub_cfg" ]; then
+          GRUB_CFG="$actual_grub_cfg"
+          GRUB_DIR=$(basename "$dir")
+          echo "找到实际的 GRUB 配置文件：$GRUB_CFG （目录：$GRUB_DIR）"
+          break
+        fi
+      fi
     fi
   done
 
+  # 如果未找到，尝试手动指定路径
   if [ -z "$GRUB_CFG" ]; then
-    echo "未找到 GRUB 配置文件。请确认 /boot/efi/EFI/ 下存在有效的 GRUB 配置文件。"
+    # 检查常见路径
+    COMMON_PATHS=(
+      "/boot/grub2/grub.cfg"
+      "/boot/efi/EFI/fedora/grub2/grub.cfg"
+      "/boot/efi/EFI/BOOT/grub.cfg"
+    )
+
+    for path in "${COMMON_PATHS[@]}"; do
+      if [ -f "$path" ]; then
+        GRUB_CFG="$path"
+        GRUB_DIR=$(basename "$(dirname "$path")")
+        echo "手动指定找到 GRUB 配置文件：$GRUB_CFG （目录：$GRUB_DIR）"
+        break
+      fi
+    done
+  fi
+
+  if [ -z "$GRUB_CFG" ]; then
+    echo "未找到包含 menuentry 的实际 GRUB 配置文件。请手动查找并指定。"
     exit 1
   fi
 else
@@ -51,6 +82,12 @@ echo "-----------------------------------"
 
 # 解析 GRUB 配置文件，提取菜单项
 mapfile -t entries < <(grep "^menuentry '" "$GRUB_CFG" | cut -d"'" -f2)
+
+# 检查是否找到启动项
+if [ ${#entries[@]} -eq 0 ]; then
+  echo "未在 $GRUB_CFG 中找到任何启动项。"
+  exit 1
+fi
 
 # 显示启动项列表
 for i in "${!entries[@]}"; do
