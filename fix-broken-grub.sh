@@ -1,215 +1,142 @@
 #!/bin/bash
 
-# 检查是否以root权限运行
-if [ "$EUID" -ne 0 ]; then
-  echo "请以root权限运行此脚本。使用 sudo ./fix-broken-grub.sh"
-  exit 1
+# 确保脚本以 root 权限运行
+if [[ $EUID -ne 0 ]]; then
+   echo "请以 root 权限运行此脚本。"
+   exit 1
 fi
 
-# 确定GRUB配置文件路径
-if [ -d /sys/firmware/efi ]; then
-  echo "检测到 UEFI 系统。"
+# 配置变量
+GRUB_CFG_PATH="/boot/grub2/grub.cfg"       # BIOS 系统
+# GRUB_CFG_PATH="/boot/efi/EFI/rocky/grub.cfg" # UEFI 系统，请根据实际情况取消注释
 
-  # 获取 /boot/efi/EFI/ 目录下的所有子目录，排除 BOOT
-  EFI_DIR="/boot/efi/EFI"
-  GRUB_CFG=""
-  GRUB_DIR=""
-
-  echo "正在查找 GRUB 配置文件..."
-
-  for dir in "$EFI_DIR"/*/; do
-    # 排除 BOOT 目录
-    if [[ "$dir" == *"BOOT"* ]]; then
-      continue
-    fi
-
-    # 检查 grub.cfg 是否存在于子目录
-    if [ -f "${dir}grub.cfg" ]; then
-      # 解析 grub.cfg 以找到实际的配置文件
-      # 读取 grub.cfg 中的 configfile 行
-      configfile_line=$(grep "^configfile " "${dir}grub.cfg" | head -n 1)
-      if [[ "$configfile_line" =~ configfile\ ([^[:space:]]+) ]]; then
-        actual_grub_cfg="${BASH_REMATCH[1]}"
-        # 处理相对路径
-        if [[ "$actual_grub_cfg" != /* ]]; then
-          actual_grub_cfg="${dir}${actual_grub_cfg}"
-        fi
-        if [ -f "$actual_grub_cfg" ]; then
-          GRUB_CFG="$actual_grub_cfg"
-          GRUB_DIR=$(basename "$dir")
-          echo "找到实际的 GRUB 配置文件：$GRUB_CFG （目录：$GRUB_DIR）"
-          break
-        fi
-      fi
-    fi
-  done
-
-  # 如果未找到，尝试手动指定路径
-  if [ -z "$GRUB_CFG" ]; then
-    # 检查常见路径
-    COMMON_PATHS=(
-      "/boot/grub2/grub.cfg"
-      "/boot/efi/EFI/fedora/grub2/grub.cfg"
-      "/boot/efi/EFI/BOOT/grub.cfg"
-    )
-
-    for path in "${COMMON_PATHS[@]}"; do
-      if [ -f "$path" ]; then
-        GRUB_CFG="$path"
-        GRUB_DIR=$(basename "$(dirname "$path")")
-        echo "手动指定找到 GRUB 配置文件：$GRUB_CFG （目录：$GRUB_DIR）"
-        break
-      fi
-    done
-  fi
-
-  if [ -z "$GRUB_CFG" ]; then
-    echo "未找到包含 menuentry 的实际 GRUB 配置文件。请手动查找并指定。"
+# 备份当前的 grub.cfg
+BACKUP_PATH="/boot/grub2/grub.cfg.backup_$(date +%F_%T)"
+cp "$GRUB_CFG_PATH" "$BACKUP_PATH"
+if [[ $? -ne 0 ]]; then
+    echo "备份 grub.cfg 失败，请检查权限和路径。"
     exit 1
-  fi
-else
-  GRUB_CFG="/boot/grub2/grub.cfg"
-  echo "检测到 BIOS 系统。使用 $GRUB_CFG 作为 GRUB 配置文件。"
+fi
+echo "已备份 grub.cfg 至 $BACKUP_PATH"
+
+# 获取所有的 menuentry
+mapfile -t MENU_ENTRIES < <(grep "^menuentry" "$GRUB_CFG_PATH" | cut -d "'" -f2)
+
+if [[ ${#MENU_ENTRIES[@]} -eq 0 ]]; then
+    echo "未找到任何 GRUB 引导项。"
+    exit 1
 fi
 
-if [ ! -f "$GRUB_CFG" ]; then
-  echo "无法找到 GRUB 配置文件：$GRUB_CFG"
-  exit 1
+echo "当前的 GRUB 引导项如下："
+echo "----------------------------------"
+for i in "${!MENU_ENTRIES[@]}"; do
+    echo "$((i+1)). ${MENU_ENTRIES[$i]}"
+done
+echo "----------------------------------"
+
+# 提示用户输入要删除的引导项编号（支持多个，用空格或逗号分隔）
+read -p "请输入要删除的引导项编号（用空格或逗号分隔，按 Enter 跳过）： " INPUT
+
+# 如果用户没有输入，则退出
+if [[ -z "$INPUT" ]]; then
+    echo "未选择任何引导项，脚本结束。"
+    exit 0
 fi
 
-echo "当前系统的 GRUB 启动项如下："
-echo "-----------------------------------"
+# 处理用户输入，将逗号替换为空格，然后转换为数组
+INPUT=$(echo "$INPUT" | tr ',' ' ')
+read -a DELETE_NUMBERS <<< "$INPUT"
 
-# 解析 GRUB 配置文件，提取菜单项
-mapfile -t entries < <(grep "^menuentry '" "$GRUB_CFG" | cut -d"'" -f2)
+# 声明一个关联数组来存储要删除的引导项
+declare -A DELETE_ENTRIES
 
-# 检查是否找到启动项
-if [ ${#entries[@]} -eq 0 ]; then
-  echo "未在 $GRUB_CFG 中找到任何启动项。"
-  exit 1
-fi
-
-# 显示启动项列表
-for i in "${!entries[@]}"; do
-  echo "[$i] ${entries[$i]}"
+# 验证输入的编号是否合法
+for num in "${DELETE_NUMBERS[@]}"; do
+    if ! [[ "$num" =~ ^[0-9]+$ ]]; then
+        echo "无效的编号：$num，请输入数字编号。"
+        exit 1
+    fi
+    if (( num < 1 || num > ${#MENU_ENTRIES[@]} )); then
+        echo "编号 $num 超出范围，请输入 1 到 ${#MENU_ENTRIES[@]} 之间的数字。"
+        exit 1
+    fi
+    # 存储要删除的引导项，防止重复
+    DELETE_ENTRIES["$num"]=1
 done
 
-echo "-----------------------------------"
-echo "请输入要删除的启动项编号（或按 'q' 退出）："
-read -r choice
-
-# 检查用户是否选择退出
-if [[ "$choice" == "q" || "$choice" == "Q" ]]; then
-  echo "已退出。"
-  exit 0
-fi
-
-# 验证输入是否为有效的数字
-if ! [[ "$choice" =~ ^[0-9]+$ ]]; then
-  echo "无效的输入。请输入有效的编号。"
-  exit 1
-fi
-
-# 检查编号是否在范围内
-if [ "$choice" -lt 0 ] || [ "$choice" -ge "${#entries[@]}" ]; then
-  echo "编号超出范围。"
-  exit 1
-fi
-
-selected_entry="${entries[$choice]}"
-echo "您选择删除的启动项是：$selected_entry"
-
 # 确认删除操作
-echo "您确定要删除此启动项吗？（y/N）："
-read -r confirm
-if [[ ! "$confirm" =~ ^[Yy]$ ]]; then
-  echo "已取消删除操作。"
-  exit 0
+echo "您选择要删除以下引导项："
+for num in "${!DELETE_ENTRIES[@]}"; do
+    echo "$num. ${MENU_ENTRIES[$((num-1))]}"
+done
+read -p "确定要删除这些引导项吗？（y/N）： " CONFIRM
+if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+    echo "操作已取消。"
+    exit 0
 fi
 
-# 判断启动项类型并执行相应的删除操作
-if [[ "$selected_entry" == *"系统备份"* || "$selected_entry" == *"snapshot"* ]]; then
-  echo "检测到该启动项可能对应一个系统快照。尝试删除相关快照。"
+# 遍历要删除的引导项
+for num in "${!DELETE_ENTRIES[@]}"; do
+    ENTRY="${MENU_ENTRIES[$((num-1))]}"
+    echo "正在处理删除引导项：$ENTRY"
 
-  # 检查是否安装了 Timeshift
-  if command -v timeshift >/dev/null 2>&1; then
-    echo "使用 Timeshift 删除快照。"
-    # 列出所有快照
-    timeshift --list
-
-    echo "请输入要删除的快照名称（例如：2024-04-27_12-00）："
-    read -r snapshot_name
-
-    # 删除指定快照
-    timeshift --delete --snapshot "$snapshot_name"
-
-    if [ $? -eq 0 ]; then
-      echo "快照 '$snapshot_name' 已成功删除。"
+    # 判断引导项类型
+    if [[ "$ENTRY" == Rocky* ]]; then
+        # 假设 Rocky Linux 快照的命名格式为 "Rocky Linux (snapshotX)"
+        SNAPSHOT_NAME=$(echo "$ENTRY" | grep -oP '(?<=Rocky Linux ).*')
+        # 提取快照名称，去除括号
+        SNAPSHOT_NAME=$(echo "$SNAPSHOT_NAME" | tr -d '()')
+        
+        # 假设使用 Btrfs，且快照位于 /@snapshots 目录下
+        SNAPSHOT_PATH="/@snapshots/$SNAPSHOT_NAME"
+        
+        # 检查快照是否存在
+        if sudo btrfs subvolume list / | grep -q "$SNAPSHOT_PATH"; then
+            echo "正在删除快照: $SNAPSHOT_PATH"
+            sudo btrfs subvolume delete "$SNAPSHOT_PATH"
+            if [[ $? -ne 0 ]]; then
+                echo "删除快照 $SNAPSHOT_PATH 失败，请手动检查。"
+            else
+                echo "已删除快照: $SNAPSHOT_PATH"
+            fi
+        else
+            echo "未找到快照 $SNAPSHOT_PATH，请手动检查。"
+        fi
+    elif [[ "$ENTRY" == Windows* ]]; then
+        echo "检测到 Windows 引导项。将从 GRUB 配置中移除该引导项。"
+        # 通常，Windows 引导项由 os-prober 自动检测，不建议手动删除
+        # 如果确实需要删除，可以禁用 os-prober 或手动编辑 grub.cfg（不推荐）
+        echo "请注意，删除 Windows 引导项可能需要进一步配置。建议谨慎操作。"
+        # 这里不执行实际删除操作
     else
-      echo "删除快照失败，请检查输入是否正确或是否有足够权限。"
-      exit 1
+        echo "未知类型的引导项：$ENTRY。跳过删除。"
     fi
-  else
-    echo "系统快照工具（如 Timeshift）未安装。请手动删除相关快照。"
-    exit 1
-  fi
-elif [[ "$selected_entry" == Rocky* || "$selected_entry" == Fedora* ]]; then
-  echo "检测到该启动项可能对应一个内核版本或系统实例。尝试删除相关内核或系统快照。"
-
-  # 列出所有已安装的内核
-  echo "已安装的内核版本："
-  rpm -q kernel
-
-  echo "请输入要删除的内核版本（例如：kernel-5.14.0-1.el8.x86_64）："
-  read -r kernel_version
-
-  # 确认内核版本是否存在
-  if rpm -q "$kernel_version" >/dev/null 2>&1; then
-    # 防止删除当前正在使用的内核
-    current_kernel=$(uname -r)
-    if [[ "$kernel_version" == *"$current_kernel"* ]]; then
-      echo "无法删除当前正在使用的内核版本。请先切换到其他内核。"
-      exit 1
-    fi
-
-    # 删除指定内核
-    dnf remove -y "$kernel_version"
-
-    if [ $? -eq 0 ]; then
-      echo "内核 '$kernel_version' 已成功删除。"
-    else
-      echo "删除内核失败，请检查输入是否正确或是否有足够权限。"
-      exit 1
-    fi
-  else
-    echo "指定的内核版本未找到。"
-    exit 1
-  fi
-else
-  echo "无法识别启动项类型。请手动删除相关启动项。"
-  exit 1
-fi
+    echo "----------------------------------"
+done
 
 # 更新 GRUB 配置
 echo "正在更新 GRUB 配置..."
-if [ -d /sys/firmware/efi ]; then
-  # UEFI 系统
-  if [ -d "/boot/efi/EFI/$GRUB_DIR" ]; then
-    grub2-mkconfig -o "/boot/efi/EFI/$GRUB_DIR/grub.cfg"
-  else
-    echo "无法找到 GRUB 目录：/boot/efi/EFI/$GRUB_DIR"
+if [[ "$GRUB_CFG_PATH" == "/boot/grub2/grub.cfg" ]]; then
+    grub2-mkconfig -o /boot/grub2/grub.cfg
+elif [[ "$GRUB_CFG_PATH" == "/boot/efi/EFI/rocky/grub.cfg" ]]; then
+    grub2-mkconfig -o /boot/efi/EFI/rocky/grub.cfg
+else
+    echo "未知的 GRUB 配置路径，请手动更新 GRUB。"
     exit 1
-  fi
-else
-  # BIOS 系统
-  grub2-mkconfig -o /boot/grub2/grub.cfg
 fi
 
-if [ $? -eq 0 ]; then
-  echo "GRUB 配置已成功更新。"
-else
-  echo "更新 GRUB 配置失败。请检查错误信息。"
-  exit 1
+if [[ $? -ne 0 ]]; then
+    echo "更新 GRUB 配置失败。"
+    exit 1
 fi
 
-echo "删除操作完成。请重启系统以应用更改。"
+echo "GRUB 配置已更新。"
+
+# 重启系统提示
+echo "操作完成。建议重启系统以应用更改。"
+read -p "是否现在重启系统？（y/N）： " REBOOT_CONFIRM
+if [[ "$REBOOT_CONFIRM" =~ ^[Yy]$ ]]; then
+    reboot
+else
+    echo "请手动重启系统以应用更改。"
+fi
