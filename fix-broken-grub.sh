@@ -5,12 +5,25 @@ if [ "$EUID" -ne 0 ]; then
   echo "请以root权限运行此脚本。使用 sudo ./manage_grub.sh"
   exit 1
 fi
+# 确定GRUB配置文件路径
+if [ -d /sys/firmware/efi ]; then
+  GRUB_CFG="/boot/efi/EFI/rocky/grub.cfg"
+  echo "检测到 UEFI 系统。使用 $GRUB_CFG 作为 GRUB 配置文件。"
+else
+  GRUB_CFG="/boot/grub2/grub.cfg"
+  echo "检测到 BIOS 系统。使用 $GRUB_CFG 作为 GRUB 配置文件。"
+fi
+
+if [ ! -f "$GRUB_CFG" ]; then
+  echo "无法找到 GRUB 配置文件：$GRUB_CFG"
+  exit 1
+fi
 
 echo "当前系统的 GRUB 启动项如下："
 echo "-----------------------------------"
 
 # 解析 GRUB 配置文件，提取菜单项
-mapfile -t entries < <(grep "^menuentry '" /boot/grub2/grub.cfg | cut -d"'" -f2)
+mapfile -t entries < <(grep "^menuentry '" "$GRUB_CFG" | cut -d"'" -f2)
 
 # 显示启动项列表
 for i in "${!entries[@]}"; do
