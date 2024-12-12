@@ -2,7 +2,7 @@
 
 # 检查是否以root权限运行
 if [ "$EUID" -ne 0 ]; then
-  echo "请以root权限运行此脚本。使用 sudo ./manage_grub.sh"
+  echo "请以root权限运行此脚本。使用 sudo ./fix-broken-grub.sh"
   exit 1
 fi
 
