@@ -102,6 +102,7 @@ install_base_packages() {
         htop
         btop
         ranger
+        hardinfo2
     )
 
     case "$ID" in
