@@ -103,6 +103,7 @@ install_base_packages() {
         btop
         ranger
         hardinfo2
+        stress
     )
 
     case "$ID" in
