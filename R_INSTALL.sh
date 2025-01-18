@@ -156,10 +156,10 @@ install_eda_tools() {
         esac
 
         # 安装JLCEDA
-        wget https://image.lceda.cn/files/lceda-pro-linux-x64-2.2.27.1.zip
-        unzip lceda-pro-linux-x64-2.2.27.1.zip
+        wget https://image.lceda.cn/files/lceda-pro-linux-x64-2.2.35.1.zip
+        unzip lceda-pro-linux-x64-2.2.35.1.zip
         bash ./install.sh
-        rm lceda-pro-linux-x64-2.2.27.1.zip
+        rm lceda-pro-linux-x64-2.2.35.1.zip
         echo "EDA软件安装完成"
     fi
 }
