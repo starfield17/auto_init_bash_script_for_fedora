@@ -112,13 +112,22 @@ install_base_packages() {
 
     case "$ID" in
         "rocky"|"almalinux"|"ol")
-            base_packages+=(cockpit cockpit-machines)
+            base_packages+=(
+                cockpit
+                cockpit-machines
+                cockpit-files
+                cockpit-navigator
+                cockpit-pcp
+                cockpit-storaged
+            )
             $INSTALL_CMD "${base_packages[@]}"
             systemctl enable --now cockpit.socket
             echo "Cockpit已启动，访问地址: https://$(hostname -I | awk '{print $1}'):9090"
             ;;
         "fedora")
-            base_packages+=(translate-shell)
+            base_packages+=(
+                translate-shell
+            )
             $INSTALL_CMD "${base_packages[@]}"
             ;;
         *)
@@ -126,6 +135,8 @@ install_base_packages() {
             ;;
     esac
 }
+
+
 
 # 安装GUI软件包
 install_gui_packages() {
