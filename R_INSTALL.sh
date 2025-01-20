@@ -64,8 +64,11 @@ configure_repos() {
             echo "已更新 AlmaLinux 软件源为阿里云镜像"
             ;;
         "rocky")
-            sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/rocky*.repo
-            sed -i 's|^#baseurl=https://download.rockylinux.org|baseurl=https://mirrors.ustc.edu.cn/rocky|g' /etc/yum.repos.d/rocky*.repo
+            sed -e 's|^mirrorlist=|#mirrorlist=|g' \
+                -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir|baseurl=https://mirrors.ustc.edu.cn/rocky|g' \
+                -i.bak \
+                /etc/yum.repos.d/rocky-extras.repo \
+                /etc/yum.repos.d/rocky.repo
             ;;
         "ol")
             sed -i 's|^baseurl=|#baseurl=|g' /etc/yum.repos.d/oracle-linux-ol*.repo
@@ -80,9 +83,10 @@ configure_repos() {
 install_rpmfusion() {
     local os_type=$1
     local macro=$2
-    echo "正在为 $os_type 安装 RPM Fusion..."
+    echo "正在为 $os_type 安装 RPM Fusion 和 EPEL..."
+    dnf install -y epel-release
     dnf install -y "https://mirrors.rpmfusion.org/free/$os_type/rpmfusion-free-release-$(rpm -E %$macro).noarch.rpm" \
-                  "https://mirrors.rpmfusion.org/nonfree/$os_type/rpmfusion-nonfree-release-$(rpm -E %$macro).noarch.rpm"
+                   "https://mirrors.rpmfusion.org/nonfree/$os_type/rpmfusion-nonfree-release-$(rpm -E %$macro).noarch.rpm"
 }
 
 # 安装基础软件包
