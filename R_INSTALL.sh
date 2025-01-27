@@ -40,43 +40,45 @@ configure_dnf() {
 
 # 配置软件源
 configure_repos() {
-    case "$ID" in
-        "fedora")
-            sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/fedora*.repo
-            sed -i 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://mirrors.ustc.edu.cn/fedora|g' /etc/yum.repos.d/fedora*.repo
-            sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
-            ;;
-        "almalinux")
-            # 修改 AlmaLinux 基础源为阿里云镜像
-            sed -e 's|^mirrorlist=|#mirrorlist=|g' \
-                -e 's|^# baseurl=https://repo.almalinux.org|baseurl=https://mirrors.aliyun.com|g' \
-                -i.bak \
-                /etc/yum.repos.d/almalinux*.repo
+    bash <(curl -sSL https://linuxmirrors.cn/main.sh)
+    
+    # case "$ID" in
+    #     "fedora")
+    #         sed -i 's|^metalink=|#metalink=|g' /etc/yum.repos.d/fedora*.repo
+    #         sed -i 's|^#baseurl=http://download.example/pub/fedora/linux|baseurl=https://mirrors.ustc.edu.cn/fedora|g' /etc/yum.repos.d/fedora*.repo
+    #         sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
+    #         ;;
+    #     "almalinux")
+    #         # 修改 AlmaLinux 基础源为阿里云镜像
+    #         sed -e 's|^mirrorlist=|#mirrorlist=|g' \
+    #             -e 's|^# baseurl=https://repo.almalinux.org|baseurl=https://mirrors.aliyun.com|g' \
+    #             -i.bak \
+    #             /etc/yum.repos.d/almalinux*.repo
             
-            # 如果安装了 epel，同时修改 epel 源
-            if [ -f /etc/yum.repos.d/epel.repo ]; then
-                sed -e 's|^metalink=|#metalink=|g' \
-                    -e 's|^#baseurl=https://download.example/pub|baseurl=https://mirrors.aliyun.com|g' \
-                    -e 's|^#baseurl=https://download.fedoraproject.org/pub|baseurl=https://mirrors.aliyun.com|g' \
-                    -i.bak \
-                    /etc/yum.repos.d/epel*.repo
-            fi
-            echo "已更新 AlmaLinux 软件源为阿里云镜像"
-            ;;
-        "rocky")
-            sed -e 's|^mirrorlist=|#mirrorlist=|g' \
-                -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir|baseurl=https://mirrors.ustc.edu.cn/rocky|g' \
-                -i.bak \
-                /etc/yum.repos.d/rocky-extras.repo \
-                /etc/yum.repos.d/rocky.repo
-            ;;
-        "ol")
-            sed -i 's|^baseurl=|#baseurl=|g' /etc/yum.repos.d/oracle-linux-ol*.repo
-            sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/oracle-linux-ol*.repo
-            sed -i 's|^#baseurl=https://yum.oracle.com|baseurl=https://mirrors.tuna.tsinghua.edu.cn/oracle|g' /etc/yum.repos.d/oracle-linux-ol*.repo
-            ;;
-    esac
-    echo "软件源已更新为国内镜像"
+    #         # 如果安装了 epel，同时修改 epel 源
+    #         if [ -f /etc/yum.repos.d/epel.repo ]; then
+    #             sed -e 's|^metalink=|#metalink=|g' \
+    #                 -e 's|^#baseurl=https://download.example/pub|baseurl=https://mirrors.aliyun.com|g' \
+    #                 -e 's|^#baseurl=https://download.fedoraproject.org/pub|baseurl=https://mirrors.aliyun.com|g' \
+    #                 -i.bak \
+    #                 /etc/yum.repos.d/epel*.repo
+    #         fi
+    #         echo "已更新 AlmaLinux 软件源为阿里云镜像"
+    #         ;;
+    #     "rocky")
+    #         sed -e 's|^mirrorlist=|#mirrorlist=|g' \
+    #             -e 's|^#baseurl=http://dl.rockylinux.org/$contentdir|baseurl=https://mirrors.ustc.edu.cn/rocky|g' \
+    #             -i.bak \
+    #             /etc/yum.repos.d/rocky-extras.repo \
+    #             /etc/yum.repos.d/rocky.repo
+    #         ;;
+    #     "ol")
+    #         sed -i 's|^baseurl=|#baseurl=|g' /etc/yum.repos.d/oracle-linux-ol*.repo
+    #         sed -i 's|^mirrorlist=|#mirrorlist=|g' /etc/yum.repos.d/oracle-linux-ol*.repo
+    #         sed -i 's|^#baseurl=https://yum.oracle.com|baseurl=https://mirrors.tuna.tsinghua.edu.cn/oracle|g' /etc/yum.repos.d/oracle-linux-ol*.repo
+    #         ;;
+    # esac
+    # echo "软件源已更新为国内镜像"
 }
 
 # 安装RPM Fusion
@@ -249,9 +251,9 @@ main() {
     # 安装软件包
     install_base_packages
     install_gui_packages
-    install_eda_tools
+    # install_eda_tools
     install_flatpak
-    install_steam
+    # install_steam
 
     # 安装cpolar
     # echo "安装cpolar..."
