@@ -179,28 +179,7 @@ install_eda_tools() {
     fi
 }
 
-# 安装VS Code
-install_vscode() {
-    echo "安装Visual Studio Code..."
-    case "$PKG_MANAGER" in
-        "pacman")
-            curl -SLf https://142857.red/files/nvimrc-install.sh | bash
-            pacman -S --noconfirm base-devel git
-            git clone https://aur.archlinux.org/visual-studio-code-bin.git
-            cd visual-studio-code-bin
-            makepkg -si --noconfirm
-            cd ..
-            rm -rf visual-studio-code-bin
-            ;;
-        "dnf")
-            rpm --import https://packages.microsoft.com/keys/microsoft.asc
-            sh -c 'echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo'
-            dnf check-update
-            dnf install -y code
-            dnf upgrade --refresh
-            ;;
-    esac
-}
+
 
 # 安装Flatpak和工具
 install_flatpak() {
@@ -271,18 +250,17 @@ main() {
     install_base_packages
     install_gui_packages
     install_eda_tools
-    install_vscode
     install_flatpak
     install_steam
 
     # 安装cpolar
-    echo "安装cpolar..."
-    curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | bash
+    # echo "安装cpolar..."
+    # curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | bash
 
     # 更改默认shell
-    echo "更改默认shell为fish..."
-    chsh -s /usr/bin/fish
-    chsh -s /usr/bin/fish "$(whoami)"
+    # echo "更改默认shell为fish..."
+    # chsh -s /usr/bin/fish
+    # chsh -s /usr/bin/fish "$(whoami)"
 
     # 配置本地化
     echo "配置系统区域设置..."
