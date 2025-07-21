@@ -1,26 +1,26 @@
 #!/bin/bash
 
-# 设置错误处理
+# Error handling setup
 set -e
 trap 'echo "Error occurred at line $LINENO. Command: $BASH_COMMAND"' ERR
 
-# 检查root权限
+# Check root privileges
 check_root() {
     if [ "$(whoami)" != "root" ]; then
-        echo "请使用 root 用户运行此脚本"
+        echo "Please run this script as root"
         exit 1
     fi
 }
 
-# 检查系统类型
+# Check system type
 check_system() {
     source /etc/os-release
     ID=$(echo $ID)
     VERSION_ID=$(echo $VERSION_ID)
-    echo "检测到系统: $ID $VERSION_ID"
+    echo "Detected system: $ID $VERSION_ID"
 }
 
-# DNF配置优化
+# Optimize DNF configuration
 configure_dnf() {
     local dnf_conf="/etc/dnf/dnf.conf"
     local configs=(
@@ -33,12 +33,12 @@ configure_dnf() {
     for config in "${configs[@]}"; do
         if ! grep -q "^${config}" "$dnf_conf"; then
             echo "$config" | tee -a "$dnf_conf"
-            echo "$config 已添加到 $dnf_conf"
+            echo "$config added to $dnf_conf"
         fi
     done
 }
 
-# 配置软件源
+# Configure repositories
 configure_repos() {
     bash <(curl -sSL https://linuxmirrors.cn/main.sh)
     
@@ -49,13 +49,13 @@ configure_repos() {
     #         sed -i 's|enabled=1|enabled=0|g' /etc/yum.repos.d/fedora-cisco-openh264.repo
     #         ;;
     #     "almalinux")
-    #         # 修改 AlmaLinux 基础源为阿里云镜像
+    #         # Change AlmaLinux base repo to Aliyun mirror
     #         sed -e 's|^mirrorlist=|#mirrorlist=|g' \
     #             -e 's|^# baseurl=https://repo.almalinux.org|baseurl=https://mirrors.aliyun.com|g' \
     #             -i.bak \
     #             /etc/yum.repos.d/almalinux*.repo
             
-    #         # 如果安装了 epel，同时修改 epel 源
+    #         # If EPEL is installed, modify EPEL repo too
     #         if [ -f /etc/yum.repos.d/epel.repo ]; then
     #             sed -e 's|^metalink=|#metalink=|g' \
     #                 -e 's|^#baseurl=https://download.example/pub|baseurl=https://mirrors.aliyun.com|g' \
@@ -63,7 +63,7 @@ configure_repos() {
     #                 -i.bak \
     #                 /etc/yum.repos.d/epel*.repo
     #         fi
-    #         echo "已更新 AlmaLinux 软件源为阿里云镜像"
+    #         echo "Updated AlmaLinux repositories to Aliyun mirror"
     #         ;;
     #     "rocky")
     #         sed -e 's|^mirrorlist=|#mirrorlist=|g' \
@@ -78,22 +78,22 @@ configure_repos() {
     #         sed -i 's|^#baseurl=https://yum.oracle.com|baseurl=https://mirrors.tuna.tsinghua.edu.cn/oracle|g' /etc/yum.repos.d/oracle-linux-ol*.repo
     #         ;;
     # esac
-    # echo "软件源已更新为国内镜像"
+    # echo "Repositories updated to Chinese mirrors"
 }
 
-# 安装RPM Fusion
+# Install RPM Fusion
 install_rpmfusion() {
     local os_type=$1
     local macro=$2
-    echo "正在为 $os_type 安装 RPM Fusion 和 EPEL..."
+    echo "Installing RPM Fusion and EPEL for $os_type..."
     dnf install -y epel-release
     dnf install -y "https://mirrors.rpmfusion.org/free/$os_type/rpmfusion-free-release-$(rpm -E %$macro).noarch.rpm" \
                    "https://mirrors.rpmfusion.org/nonfree/$os_type/rpmfusion-nonfree-release-$(rpm -E %$macro).noarch.rpm"
 }
 
-# 安装基础软件包
+# Install base packages
 install_base_packages() {
-    echo "安装基础软件包..."
+    echo "Installing base packages..."
     local base_packages=(
         gcc
         gdb
@@ -125,7 +125,7 @@ install_base_packages() {
             )
             $INSTALL_CMD "${base_packages[@]}"
             systemctl enable --now cockpit.socket
-            echo "Cockpit已启动，访问地址: https://$(hostname -I | awk '{print $1}'):9090"
+            echo "Cockpit started, access at: https://$(hostname -I | awk '{print $1}'):9090"
             ;;
         "fedora")
             base_packages+=(
@@ -139,11 +139,9 @@ install_base_packages() {
     esac
 }
 
-
-
-# 安装GUI软件包
+# Install GUI packages
 install_gui_packages() {
-    read -p "是否安装GUI软件包? (Y/y/N) " GUIPACK
+    read -p "Install GUI packages? (Y/y/N) " GUIPACK
     if [[ "$GUIPACK" =~ ^[Yy]$ ]]; then
         local gui_packages=(
             putty
@@ -156,38 +154,36 @@ install_gui_packages() {
         fi
         
         $INSTALL_CMD "${gui_packages[@]}"
-        echo "GUI软件包安装完成"
+        echo "GUI packages installed"
     fi
 }
 
-# 安装EDA工具
+# Install EDA tools
 install_eda_tools() {
-    read -p "是否安装KiCad, QUCS和JLCEDA? (Y/y/N) " kicadin
+    read -p "Install KiCad, QUCS and JLCEDA? (Y/y/N) " kicadin
     if [[ "$kicadin" =~ ^[Yy]$ ]]; then
         case "$ID" in
             "rocky"|"ol"|"almalinux")
-                echo "注意：只能安装JLCEDA"
+                echo "Note: Only JLCEDA can be installed"
                 ;;
             *)
                 $INSTALL_CMD kicad qucs
                 ;;
         esac
 
-        # 安装JLCEDA
+        # Install JLCEDA
         wget https://image.lceda.cn/files/lceda-pro-linux-x64-2.2.35.1.zip
         unzip lceda-pro-linux-x64-2.2.35.1.zip
         bash ./install.sh
         rm lceda-pro-linux-x64-2.2.35.1.zip
-        echo "EDA软件安装完成"
+        echo "EDA tools installed"
     fi
 }
 
-
-
-# 安装Flatpak和工具
+# Install Flatpak and tools
 install_flatpak() {
     if [ "$PKG_MANAGER" = "dnf" ]; then
-        read -p "是否安装Flatpak和相关工具? (Y/y/N) " clouds
+        read -p "Install Flatpak and related tools? (Y/y/N) " clouds
         if [[ "$clouds" =~ ^[Yy]$ ]]; then
             dnf install -y flatpak
             flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
@@ -196,22 +192,22 @@ install_flatpak() {
     fi
 }
 
-# 安装Steam
+# Install Steam
 install_steam() {
-    read -p "是否安装Steam? (Y/y/N) " inssteam
+    read -p "Install Steam? (Y/y/N) " inssteam
     if [[ "$inssteam" =~ ^[Yy]$ ]]; then
         case "$PKG_MANAGER" in
             "dnf")
                 $INSTALL_CMD steam
                 ;;
             "pacman")
-                echo "Arch Linux环境，跳过Steam安装"
+                echo "Arch Linux environment, skipping Steam installation"
                 ;;
         esac
     fi
 }
 
-# 主函数
+# Main function
 main() {
     check_root
     check_system
@@ -219,7 +215,7 @@ main() {
     if [ -f /etc/redhat-release ] || [ "$ID" = "ol" ]; then
         case "$ID" in
             rocky|fedora|almalinux|ol)
-                echo "检测到 $ID Linux"
+                echo "Detected $ID Linux"
                 [ "$ID" != "fedora" ] && yum install -y dnf
                 dnf clean all
                 configure_dnf
@@ -230,7 +226,7 @@ main() {
                 UPDATE_CMD="dnf update -y"
                 ;;
             *)
-                echo "不支持的Red Hat发行版"
+                echo "Unsupported Red Hat distribution"
                 exit 1
                 ;;
         esac
@@ -239,37 +235,37 @@ main() {
         INSTALL_CMD="pacman -S --noconfirm"
         UPDATE_CMD="pacman -Syu --noconfirm"
     else
-        echo "不支持的Linux发行版"
+        echo "Unsupported Linux distribution"
         exit 1
     fi
 
-    echo "使用包管理器: $PKG_MANAGER"
+    echo "Using package manager: $PKG_MANAGER"
     
-    # 执行系统更新
-    echo "更新系统..."
+    # Perform system update
+    echo "Updating system..."
     $UPDATE_CMD
 
-    # 安装软件包
+    # Install packages
     install_base_packages
     install_gui_packages
     # install_eda_tools
     install_flatpak
     # install_steam
 
-    # 安装cpolar
-    # echo "安装cpolar..."
+    # Install cpolar
+    # echo "Installing cpolar..."
     # curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | bash
 
-    # 更改默认shell
-    # echo "更改默认shell为fish..."
+    # Change default shell
+    # echo "Changing default shell to fish..."
     # chsh -s /usr/bin/fish
     # chsh -s /usr/bin/fish "$(whoami)"
 
-    # 配置本地化
-    echo "配置系统区域设置..."
+    # Configure localization
+    echo "Configuring system locale..."
     localectl set-locale LANG=en_US.UTF-8
 
-    echo "安装和配置完成！"
+    echo "Installation and configuration complete!"
 }
 
 main "$@"
