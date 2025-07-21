@@ -110,6 +110,7 @@ install_base_packages() {
         ranger
         hardinfo2
         stress
+        s-tui
     )
 
     case "$ID" in
