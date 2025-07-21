@@ -1,87 +1,88 @@
-# auto_init_bash_script_for_fedora
-## 概要
-このスクリプトは、RedHat系Linuxディストリビューション（Fedora、Rocky Linux、AlmaLinux、Oracle Linux）向けの自動セットアップツールです。システムの初期設定から開発ツール、GUI アプリケーション、その他の便利なソフトウェアまでを一括でインストールします。
+# Auto Initialization Bash Script for Fedora/RHEL-based Systems
 
-## 前提条件
-- root権限を持っていること
-- 以下のいずれかのLinuxディストリビューションを使用していること：
+## Overview
+This script provides an automated setup tool for RedHat-based Linux distributions (Fedora, Rocky Linux, AlmaLinux, Oracle Linux). It handles everything from system initialization to development tools, GUI applications, and other useful software in a single execution.
+
+## Prerequisites
+- Root privileges
+- One of the following Linux distributions:
   - Fedora
   - Rocky Linux
   - AlmaLinux
   - Oracle Linux
-- インターネット接続が利用可能であること
+- Active internet connection
 
-## 主な機能
-- システムのパッケージマネージャー（DNF）の最適化
-- 国内ミラーへのソースの変更
-- RPM FusionとEPELリポジトリの追加
-- 基本的な開発ツールのインストール
-- システム管理ツールのインストール
-- GUIアプリケーションのオプションインストール
-- Flatpakのセットアップとアプリケーションのインストール
+## Key Features
+- Optimizes system package manager (DNF)
+- Changes repositories to domestic mirrors
+- Adds RPM Fusion and EPEL repositories
+- Installs essential development tools
+- Installs system management utilities
+- Optional GUI application installation
+- Flatpak setup and application installation
 
-## インストールされる主なパッケージ
-### 基本パッケージ
-- gcc, gdb（開発ツール）
-- fish（モダンシェル）
-- neovim, vim, helix（テキストエディタ）
-- tmux, byobu（ターミナルマルチプレクサ）
-- htop, btop（システムモニター）
-- fastfetch, neofetch（システム情報表示）
-- ranger（ファイルマネージャー）
-- hardinfo2（ハードウェア情報）
+## Main Packages Installed
 
-### サーバー管理ツール（Rocky Linux/AlmaLinux/Oracle Linux向け）
-- cockpit関連パッケージ
-  - Web経由でのシステム管理が可能
-  - デフォルトポート：9090
+### Core Packages
+- gcc, gdb (development tools)
+- fish (modern shell)
+- neovim, vim, helix (text editors)
+- tmux, byobu (terminal multiplexers)
+- htop, btop (system monitors)
+- fastfetch, neofetch (system information tools)
+- ranger (file manager)
+- hardinfo2 (hardware information)
 
-### オプショナルパッケージ
-- GUI関連：putty, remmina, bleachbit
-- Flatpak経由：PeaZip, rnote
+### Server Management Tools (Rocky Linux/AlmaLinux/Oracle Linux)
+- Cockpit-related packages
+  - Web-based system management
+  - Default port: 9090
 
-## 使用方法
+### Optional Packages
+- GUI applications: putty, remmina, bleachbit
+- Flatpak applications: PeaZip, rnote
 
-1. スクリプトをダウンロード：
+## Usage Instructions
+
+1. Download the script:
 ```bash
-wget https://[スクリプトのURL]/R_INSTALL.sh
+wget https://[script_URL]/R_INSTALL.sh
 ```
 
-2. 実行権限を付与：
+2. Make it executable:
 ```bash
 chmod +x R_INSTALL.sh
 ```
 
-3. root権限で実行：
+3. Run with root privileges:
 ```bash
 sudo ./R_INSTALL.sh
 ```
 
-## インストール時の対話的選択項目
-- GUIパッケージのインストール（Y/N）
-- Flatpakとツールのインストール（Y/N）
+## Interactive Installation Options
+- Install GUI packages (Y/N)
+- Install Flatpak and tools (Y/N)
 
-## システム設定の変更内容
-- デフォルトのロケール：en_US.UTF-8
-- DNFの設定最適化：
-  - 最速ミラーの使用
-  - 並列ダウンロードの有効化
-  - キャッシュの保持
-  - デフォルトで「Yes」を選択
+## System Configuration Changes
+- Default locale: en_US.UTF-8
+- DNF optimizations:
+  - Fastest mirror selection
+  - Parallel downloads enabled
+  - Cache preservation
+  - Default "Yes" for installations
 
-## 注意事項
-- インストール中はインターネット接続が必要です
-- システムの更新とパッケージのインストールには時間がかかる場合があります
-- 一部の機能はディストリビューションによって利用できない場合があります
-- インストール前にシステムのバックアップを推奨します
+## Important Notes
+- Internet connection required during installation
+- System updates and package installations may take time
+- Some features may not be available on all distributions
+- System backup is recommended before installation
 
-## トラブルシューティング
-エラーが発生した場合は、以下の情報が表示されます：
-- エラーが発生した行番号
-- 実行されていたコマンド
+## Troubleshooting
+Errors will display:
+- Line number where error occurred
+- Command being executed
 
-問題が解決しない場合は、以下を確認してください：
-1. root権限で実行しているか
-2. インターネット接続が正常か
-3. システムが対応ディストリビューションであるか
-
+If issues persist, verify:
+1. Script is running with root privileges
+2. Internet connection is stable
+3. System is a supported distribution
