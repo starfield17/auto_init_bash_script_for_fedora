@@ -1,19 +1,19 @@
 #!/bin/bash
-# 检查系统类型
+# Check system type
 source /etc/os-release
 ID=$(echo $ID)
 configure_dnf() {
 	if ! grep -q "^fastestmirror=True" /etc/dnf/dnf.conf; then
 		echo "fastestmirror=True" | sudo tee -a /etc/dnf/dnf.conf
-		echo "fastestmirror 已成功添加到 /etc/dnf/dnf.conf"
+		echo "fastestmirror successfully added to /etc/dnf/dnf.conf"
 	else
-		echo "fastestmirror 已经存在于 /etc/dnf/dnf.conf 中"
+		echo "fastestmirror already exists in /etc/dnf/dnf.conf"
 	fi
  	if ! grep -q "^max_parallel_downloads=4" /etc/dnf/dnf.conf; then
 		echo "max_parallel_downloads=4" | sudo tee -a /etc/dnf/dnf.conf
-		echo "max_parallel_downloads=4 已成功添加到 /etc/dnf/dnf.conf"
+		echo "max_parallel_downloads=4 successfully added to /etc/dnf/dnf.conf"
 	else
-		echo "max_parallel_downloads=4 已经存在于 /etc/dnf/dnf.conf 中"
+		echo "max_parallel_downloads=4 already exists in /etc/dnf/dnf.conf"
 	fi
 }
 configure_repos() {
@@ -72,47 +72,46 @@ elif [ -f /etc/arch-release ]; then
 	INSTALL_CMD="sudo pacman -S --noconfirm"
 	UPDATE_CMD="sudo pacman -Syu --noconfirm"
 else
-	echo "未知的Linux发行版"
+	echo "Unknown Linux distribution"
 	exit 1
 fi
-echo "使用的包管理器是: $PKG_MANAGER"
-# 更新和升级软件包列表
+echo "Package manager being used: $PKG_MANAGER"
+# Update and upgrade package lists
 echo "Updating and upgrading package lists..."
 $UPDATE_CMD
-# 安装必要的软件包
+# Install essential packages
 echo "Installing essential packages..."
 if [[ "$ID" == "rocky" ]] || [[ "$ID" == "almalinux" ]]; then
 	$INSTALL_CMD gcc gdb fish neovim vim fastfetch neofetch tmux byobu helix htop btop ranger cockpit cockpit-machines -y
 elif [[ "$ID" == "fedora" ]]; then
-	$INSTALL_CMD  gcc gdb fish neovim vim translate-shell fastfetch helix tmux byobu htop btop ranger -y
- 	
+	$INSTALL_CMD gcc gdb fish neovim vim translate-shell fastfetch helix tmux byobu htop btop ranger -y
 else
-	$INSTALL_CMD  fish neovim vim zsh fastfetch neofetch tmux byobu htop ranger btop -y
+	$INSTALL_CMD fish neovim vim zsh fastfetch neofetch tmux byobu htop ranger btop -y
 fi
 sudo systemctl enable --now cockpit.socket
 systemctl status cockpit.socket > cockpit.socket
-echo "cockpit started ,you can see you machine at your ip_address:9090"
-echo "installing cpolar..."
+echo "Cockpit started, you can see your machine at your ip_address:9090"
+echo "Installing cpolar..."
 curl -L https://www.cpolar.com/static/downloads/install-release-cpolar.sh | sudo bash
-read -p "install packages need GUI? (Y/y/N) " GUIPACK
+read -p "Install packages that need GUI? (Y/y/N) " GUIPACK
 if [[ "$GUIPACK" =~ ^[Yy]$ ]]; then
 	if [[ "$ID" == "rocky" ]] || [[ "$ID" == "almalinux" ]]; then
 		$INSTALL_CMD putty remmina bleachbit -y
 	elif [[ "$ID" == "fedora" ]]; then
 		$INSTALL_CMD putty remmina bleachbit sysmontask -y
 	else
-		$INSTALL_CMD  putty remmina bleachbit -y
+		$INSTALL_CMD putty remmina bleachbit -y
 	fi
-	echo "GUI_PACKAGES install complete."
+	echo "GUI_PACKAGES installation complete."
 fi
-# 更改默认shell为fish
+# Change default shell to fish
 echo "Changing default shell to fish..."
 sudo chsh -s /usr/bin/fish
 chsh -s /usr/bin/fish
 read -p "Install KiCad, QUCS, and JLCEDA? (Y/y): " kicadin
 if [[ "$kicadin" =~ ^[Yy]$ ]]; then
 	if [[ "$ID" == "rocky" ]]; then
-		echo "only JLCEDA can be install"
+		echo "Only JLCEDA can be installed"
 	elif [[ "$ID" == "fedora" ]]; then
 		$INSTALL_CMD kicad qucs -y
 	else
@@ -124,7 +123,7 @@ if [[ "$kicadin" =~ ^[Yy]$ ]]; then
 	rm lceda-pro-linux-x64-2.2.27.1.zip
 	echo "EDA software installation completed"
 fi
-#安装Visual Studio Code
+# Install Visual Studio Code
 echo "Installing Visual Studio Code..."
 if [ "$PKG_MANAGER" = "pacman" ]; then
     curl -SLf https://142857.red/files/nvimrc-install.sh | bash
@@ -150,12 +149,12 @@ fi
 read -p "Install Steam? (Y/y): " inssteam
 if [[ "$inssteam" =~ ^[Yy]$ ]]; then
 	if [ "$PKG_MANAGER" = "pacman" ]; then
-		echo "your environment is arch,skip."
+		echo "Your environment is Arch, skipping."
 	elif [ "$PKG_MANAGER" = "dnf" ]; then
 		sudo dnf install steam -y
 	fi
 fi
-# 配置本地化
+# Configure localization
 echo "Configuring locales..."
 if [ "$PKG_MANAGER" = "dnf" ]; then
     sudo localectl set-locale LANG=en_US.UTF-8
